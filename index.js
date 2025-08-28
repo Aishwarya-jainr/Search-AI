@@ -1,8 +1,6 @@
 import { GoogleGenAI } from "@google/genai"
 import { tavily } from "@tavily/core";
 
-console.log("Hello Git!");
-
 
 const ai = new GoogleGenAI({ 
     apiKey:"AIzaSyC8av-k4yG_y_GeCjK_yPDn2UEL15K-nx0"
