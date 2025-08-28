@@ -1,52 +1,94 @@
-import { GoogleGenAI } from "@google/genai"
+import { config } from "dotenv";
+import { GoogleGenAI , Type } from "@google/genai";
 import { tavily } from "@tavily/core";
+import readLine from "readline";
 
+config()
 
-const ai = new GoogleGenAI({ 
-    apiKey:"AIzaSyC8av-k4yG_y_GeCjK_yPDn2UEL15K-nx0"
+const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY
 })
 
 const tvly = tavily({
-    apiKey:"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"
+    apiKey: process.env.TAVILY_API_KEY
 })
 
 //Declaration of the tool
 const searchWebTool = {
     name: "search_web",
     description: "Useful for when you need to answer questions about current events.",
-    parameters:{
+    parameters: {
         type: Type.OBJECT,
         properties: {
-            query:{
+            query: {
                 type: Type.STRING,
-                description:"Search query to find relevant information"
+                description: "Search query to find relevant information"
             }
         },
-        required:["query"]
+        required: ['query'],
     }
 }
 
 
 //Implementation of the tool
-const tools= {
-    "search_web":async({query})=>{
-        const response = tvly.search(query);
-        console.log(response)
+const tools = {
+    "search_web": async ({ query }) => {
+        const response = await tvly.search(query);
+        // console.log(response)
+        return response.results;
     }
 }
 
-ai.models.generateContent({
-    model:"gemini-2.5-flash",
-    contents:"What is gemini 2.5 flash?",
-    config:{
-        tools:[{
-            functionDeclarations:[searchWebTool],
-        }]
+
+// .then(resonse=>{
+//     response.functionCalls.map(async(call)=>{
+//         const result = await tools[call.name](call.arguments);
+//         console.log(result)
+//     })
+// })
+
+// Create an interface for input and output
+const rl = readLine.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+const history = []
+
+while (true) {
+    if (history[history.length - 1]?.role !== "user") {
+        const message = await new Promise(resolve => rl.question("user: ", resolve));
+        history.push({ role: "user", parts: [{ text: message }] })
     }
-})
-.then(resonse=>{
-    response.functionCalls.map(async(call)=>{
-        const result = await tools[call.name](call.arguments);
-        console.log(result)
+
+    const aiResponse = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: history,
+        config: {
+            tools: [{functionDeclarations: [searchWebTool] }],
+            systemInstruction: `You can use this tool to get more information`
+        }
     })
-})
+
+    if (aiResponse.functionCalls && aiResponse.functionCalls[0]) {
+        const result = await tools[aiResponse.functionCalls[0].name](aiResponse.functionCalls[0].args);
+
+        const content = result.map(con => con.content).join("\n")
+
+        history.push({
+            role: "user",
+            parts: [{
+                text: `
+            I searched the web for "${aiResponse.functionCalls[0].args.query}" and found the following information:${content}
+            `
+            }]
+        })
+    }
+    else {
+        history.push({
+            role: "model",
+            parts: [{ text: aiResponse.text }]
+        })
+        console.log("AI:", aiResponse.text)
+    }
+}

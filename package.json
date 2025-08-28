@@ -2,6 +2,7 @@
   "name": "search-ai",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,6 +13,7 @@
   "dependencies": {
     "@google/genai": "^1.15.0",
     "@tavily/core": "^0.5.11",
+    "dotenv": "^17.2.1",
     "express": "^5.1.0"
   }
 }
