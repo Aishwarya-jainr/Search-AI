@@ -37,11 +37,15 @@ cd <project-folder>
 
 2. Install dependencies:
 
+```bash
 npm install
 
 3. Create a .env file in the root:
+
+```bash
 GEMINI_API_KEY=your_api_key_here
 TAVILY_API_KEY=your_api_key_here
+
 You MUST have valid keys for both services.
 
 ## ▶️ How to Run
